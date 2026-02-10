@@ -1,11 +1,8 @@
-name: Full Stack CI/CD (Frontend + Backend)
+name: Full Stack CI/CD via Docker Hub + AWS SSM
 
 on:
   push:
     branches: [ main ]
-    paths:
-      - '**'
-      - '.github/workflows/fullstack-deploy.yml'
 
 env:
   REGISTRY_HOSTNAME: docker.io
@@ -24,15 +21,19 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      # ✅ FIXED METADATA STEP
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v4
         with:
+          images: |
+            ${{ env.REGISTRY_HOSTNAME }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE }}
+            ${{ env.REGISTRY_HOSTNAME }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}
           tags: |
             type=sha
 
@@ -42,7 +43,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      # ---------- Backend ----------
+      # -------- Backend --------
       - name: Build & Push Backend Image
         uses: docker/build-push-action@v3
         with:
@@ -51,7 +52,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY_HOSTNAME }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ steps.meta.outputs.version }}
 
-      # ---------- Frontend ----------
+      # -------- Frontend --------
       - name: Build & Push Frontend Image
         uses: docker/build-push-action@v3
         with:
@@ -61,7 +62,7 @@ jobs:
             ${{ env.REGISTRY_HOSTNAME }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.version }}
 
 # ===============================
-# 2️⃣ DEPLOY VIA AWS SSM
+# 2️⃣ DEPLOY TO EC2 (SSM)
 # ===============================
   deploy:
     needs: build-and-push
@@ -69,7 +70,7 @@ jobs:
 
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -80,26 +81,7 @@ jobs:
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets "Key=instanceIds,Values=${{ secrets.EC2_INSTANCE_ID }}" \
-            --comment "Deploy Full Stack App (SHA tag)" \
+            --comment "Deploy Full Stack App (SHA-based)" \
+            --region ${{ secrets.AWS_REGION }} \
             --parameters 'commands=[
-              "set -e",
-
-              "export DOCKER_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}",
-              "export TAG=${{ needs.build-and-push.outputs.docker_tag }}",
-
-              "echo Logging into Docker Hub",
-              "echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login docker.io -u $DOCKER_USERNAME --password-stdin",
-
-              "cd /home/ubuntu/fullstack-demo || exit 1",
-
-              "echo Updating docker-compose image tags",
-              "export FRONTEND_IMAGE=docker.io/$DOCKER_USERNAME/fullstack-frontend:$TAG",
-              "export BACKEND_IMAGE=docker.io/$DOCKER_USERNAME/fullstack-backend:$TAG",
-
-              "docker-compose pull",
-              "docker-compose down",
-              "docker-compose up -d",
-
-              "docker image prune -af || true"
-            ]' \
-            --region ${{ secrets.AWS_REGION }}
+              "se
