@@ -1,6 +1,5 @@
 name: Full Stack CI/CD (Backend + Frontend + Nginx)
 
-
 on:
   push:
     branches: [ main ]
