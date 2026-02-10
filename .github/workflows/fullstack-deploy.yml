@@ -8,6 +8,7 @@ env:
   REGISTRY_HOSTNAME: docker.io
   FRONTEND_IMAGE: fullstack-frontend
   BACKEND_IMAGE: fullstack-backend
+  
 
 # ===============================
 # 1️⃣ BUILD & PUSH IMAGES
