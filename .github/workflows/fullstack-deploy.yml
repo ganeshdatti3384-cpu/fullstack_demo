@@ -84,7 +84,7 @@ jobs:
               \"set -e\",
               \"echo Logging into Docker Hub\",
               \"echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login docker.io -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin\",
-              \"cd /home/ubuntu/fullstack-demo\",
+             
               \"export TAG=${{ needs.build-and-push.outputs.docker_tag }}\",
               \"export BACKEND_IMAGE=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/fullstack-backend:$TAG\",
               \"export FRONTEND_IMAGE=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/fullstack-frontend:$TAG\",
