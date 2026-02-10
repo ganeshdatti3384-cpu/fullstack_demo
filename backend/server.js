@@ -22,5 +22,9 @@ db.run('INSERT INTO users(name) VALUES(?)', [name]);
 res.json({ message: 'User added' });
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK' });
+});
+
 
 app.listen(5000, () => console.log('Backend running on port 5000'));
