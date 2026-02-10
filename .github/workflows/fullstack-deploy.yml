@@ -3,6 +3,7 @@ name: Full Stack CI/CD via Docker Hub + AWS SSM
 on:
   push:
     branches: [ main ]
+    
 
 env:
   REGISTRY_HOSTNAME: docker.io
