@@ -82,8 +82,22 @@ jobs:
               \"docker pull docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ needs.build-and-push.outputs.docker_tag }}\",
               \"docker stop backend frontend nginx || true\",
               \"docker rm backend frontend nginx || true\",
-              \"docker run -d --name backend -p 5000:5000 docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ needs.build-and-push.outputs.docker_tag }}\",
-              \"docker run -d --name frontend docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ needs.build-and-push.outputs.docker_tag }}\",
-              \"docker run -d --name nginx -p 80:80 --link backend --link frontend nginx:alpine\",
+             docker run -d \
+             --name backend \
+             --network app-network \
+              -p 5000:5000 \
+             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ needs.build-and-push.outputs.docker_tag }}
+
+           docker run -d \
+           --name frontend \
+           --network app-network \
+           docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ needs.build-and-push.outputs.docker_tag }}
+
+           docker run -d \
+           --name nginx \
+           --network app-network \
+          -p 80:80 \
+           nginx:alpine,
+
               \"docker image prune -af || true\"
             ]"
